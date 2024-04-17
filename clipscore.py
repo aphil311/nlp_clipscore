@@ -9,6 +9,8 @@ Code for CLIPScore (https://arxiv.org/abs/2104.08718)
 '''
 import argparse
 import clip
+import open_clip
+from open_clip import tokenizer
 import torch
 from PIL import Image
 from sklearn.preprocessing import normalize
@@ -26,6 +28,7 @@ import pprint
 import warnings
 from packaging import version
 
+#print(open_clip.list_pretrained())
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -72,12 +75,14 @@ class CLIPCapDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         c_data = self.data[idx]
-        c_data = clip.tokenize(self.prefix + c_data, truncate=True).squeeze()
+        c_data = tokenizer.tokenize(self.prefix + c_data).squeeze()
         return {'caption': c_data}
 
     def __len__(self):
         return len(self.data)
 
+def preprocess_image(image):
+    return image.convert("RGB")
 
 class CLIPImageDataset(torch.utils.data.Dataset):
     def __init__(self, data):
@@ -89,7 +94,7 @@ class CLIPImageDataset(torch.utils.data.Dataset):
         return Compose([
             Resize(n_px, interpolation=Image.BICUBIC),
             CenterCrop(n_px),
-            lambda image: image.convert("RGB"),
+            preprocess_image,
             ToTensor(),
             Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711)),
         ])
@@ -226,7 +231,7 @@ def main():
         warnings.warn(
             'CLIP runs in full float32 on CPU. Results in paper were computed on GPU, which uses float16. '
             'If you\'re reporting results on CPU, please note this when you report.')
-    model, transform = clip.load("ViT-B/32", device=device, jit=False)
+    model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
     model.eval()
 
     image_feats = extract_all_images(
