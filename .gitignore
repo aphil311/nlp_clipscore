@@ -1,5 +1,7 @@
-__pychache__/
-
 example/images
 example/raw_images
 example/testset
+
+.DS_Store
+__pycache__/
+example/.DS_Store
