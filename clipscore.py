@@ -57,6 +57,11 @@ def parse_args():
         '--save_per_instance',
         default=None,
         help='if set, we will save per instance clipscores to this file')
+    
+    parser.add_argument(
+        '--pretrain',
+        default=None,
+        help='specify which pretrain dataset to use, defaults to openai')
 
     args = parser.parse_args()
 
@@ -211,12 +216,14 @@ def get_refonlyclipscore(model, references, candidates, device):
 def main():
     args = parse_args()
 
-    image_paths = [os.path.join(args.image_dir, path) for path in os.listdir(args.image_dir)
-                   if path.endswith(('.png', '.jpg', '.jpeg', '.tiff'))]
-    image_ids = [pathlib.Path(path).stem for path in image_paths]
-
     with open(args.candidates_json) as f:
         candidates = json.load(f)
+    
+    image_paths = [os.path.join(args.image_dir, image_id + '.jpg') for image_id in candidates.keys()
+                   if os.path.exists(os.path.join(args.image_dir, image_id + '.jpg'))]
+    image_ids = [pathlib.Path(path).stem for path in image_paths]
+
+    
     candidates = [candidates[cid] for cid in image_ids]
 
     if args.references_json:
@@ -231,7 +238,11 @@ def main():
         warnings.warn(
             'CLIP runs in full float32 on CPU. Results in paper were computed on GPU, which uses float16. '
             'If you\'re reporting results on CPU, please note this when you report.')
-    model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
+    
+    if args.pretrain:
+        model, _, preprocess = open_clip.create_model_and_transforms('ViT-L-14', pretrained=args.pretrain)
+    else:
+        model, _, preprocess = open_clip.create_model_and_transforms('ViT-L-14', pretrained='laion2b_s32b_b82k')
     model.eval()
 
     image_feats = extract_all_images(
