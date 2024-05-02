@@ -1,3 +1,5 @@
-__pychache__
+__pychache__/
 
-example
+example/images
+example/raw_images
+example/testset
