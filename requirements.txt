@@ -1,2 +1,3 @@
 git+https://github.com/openai/CLIP.git
 git+https://github.com/jmhessel/pycocoevalcap.git
+open-clip-torch==2.24.0
